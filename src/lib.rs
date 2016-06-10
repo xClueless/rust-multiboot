@@ -13,6 +13,9 @@
 #[cfg(test)]
 extern crate std;
 
+#[cfg(feature = "vbe")]
+extern crate vesa;
+
 use core::mem::{size_of, transmute};
 use core::str;
 use core::slice;
@@ -274,6 +277,18 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Multiboot<'a, F> {
                 Some(MemoryMapIter { current: start, end: end, mb: self })
             }
             false => None
+        }
+    }
+    #[cfg(feature = "vbe")]
+    pub fn vbe_mode_info(&'a self) -> Option<&'a vesa::vbe_mode_info> {
+        match self.has_vbe() {
+            true => {
+                unsafe {
+                    let vbe_ref: &vesa::vbe_mode_info = transmute(self.header.vbe_mode_info);
+                    Some(vbe_ref)
+                }
+           },
+            false => None,
         }
     }
 }

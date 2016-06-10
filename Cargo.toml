@@ -12,6 +12,12 @@ readme = "README.md"
 keywords = ["multiboot", "kernel", "os", "bootloader", "x86"]
 license = "MIT"
 
+[features]
+vbe = ["vesa"]
+
+[dependencies]
+vesa = { git = "http://github.com/xClueless/vesa-rs", optional = true}
+
 [[test]]
 name = "mbtest"
 harness = false
