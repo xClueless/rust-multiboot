@@ -13,7 +13,7 @@
 #[cfg(test)]
 extern crate std;
 
-#[cfg(feature = "vbe")]
+#[cfg(feature = "_vesa")]
 extern crate vesa;
 
 use core::mem::{size_of, transmute};
@@ -279,7 +279,7 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Multiboot<'a, F> {
             false => None
         }
     }
-    #[cfg(feature = "vbe")]
+    #[cfg(feature = "_vesa")]
     pub fn vbe_mode_info(&'a self) -> Option<&'a vesa::vbe_mode_info> {
         match self.has_vbe() {
             true => {
