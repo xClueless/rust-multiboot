@@ -23,7 +23,7 @@ use core::slice;
 /// Value found in %eax after multiboot jumps to our entry point.
 pub const SIGNATURE_EAX: u32 = 0x2BADB002;
 
-pub type PAddr = u64;
+pub type PAddr = usize;
 
 /// Multiboot struct clients mainly interact with
 /// To create this use Multiboot::new()
@@ -433,15 +433,15 @@ struct MBModule {
 #[derive(Debug)]
 pub struct Module<'a> {
     /// Start address of module in physical memory.
-    pub start: PAddr,
+    pub start: u32,
     /// End address of module in physic memory.
-    pub end: PAddr,
+    pub end: u32,
     /// Name of the module.
     pub string: Option<&'a str>
 }
 
 impl<'a> Module<'a> {
-    fn new(start: PAddr, end: PAddr, name: Option<&'a str>) -> Module {
+    fn new(start: u32, end: u32, name: Option<&'a str>) -> Module {
         Module{start: start, end: end, string: name}
     }
 }
