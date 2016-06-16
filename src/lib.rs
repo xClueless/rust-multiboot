@@ -433,15 +433,15 @@ struct MBModule {
 #[derive(Debug)]
 pub struct Module<'a> {
     /// Start address of module in physical memory.
-    pub start: u32,
+    pub start: PAddr,
     /// End address of module in physic memory.
-    pub end: u32,
+    pub end: PAddr,
     /// Name of the module.
     pub string: Option<&'a str>
 }
 
 impl<'a> Module<'a> {
-    fn new(start: u32, end: u32, name: Option<&'a str>) -> Module {
+    fn new(start: PAddr, end: PAddr, name: Option<&'a str>) -> Module {
         Module{start: start, end: end, string: name}
     }
 }
