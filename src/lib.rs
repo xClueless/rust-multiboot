@@ -284,7 +284,7 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Multiboot<'a, F> {
         match self.has_vbe() {
             true => {
                 unsafe {
-                    let vbe_ref: &vesa::vbe_mode_info = transmute(self.header.vbe_mode_info);
+                    let vbe_ref: &vesa::vbe_mode_info = transmute(self.header.vbe_mode_info as usize);
                     Some(vbe_ref)
                 }
            },
