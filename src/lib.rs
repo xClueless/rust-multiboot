@@ -287,7 +287,13 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Multiboot<'a, F> {
                     let vbe_ref: &vesa::vbe_mode_info = transmute(self.header.vbe_mode_info as usize);
                     Some(vbe_ref)
                 }
-           },
+            },
+            false => None,
+        }
+    }
+    pub fn elf_symbols(&self) -> Option<&'a ElfSymbols> {
+        match self.has_symbols() {
+            true => Some(&self.header.elf_symbols),
             false => None,
         }
     }
@@ -471,7 +477,7 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Iterator for ModuleIter<'a, F>
 /// Multiboot format for ELF Symbols
 #[derive(Debug)]
 #[repr(C, packed)]
-struct ElfSymbols {
+pub struct ElfSymbols {
     num: u32,
     size: u32,
     addr: u32,
