@@ -14,9 +14,11 @@ license = "MIT"
 
 [features]
 _vesa = ["vesa"]
+_elf = ["elfloader"]
 
 [dependencies]
-vesa = { git = "http://github.com/xClueless/vesa-rs", optional = true}
+vesa = { git = "http://github.com/xClueless/vesa-rs", optional = true }
+elfloader = { version = "0.0.*", optional = true }
 
 [[test]]
 name = "mbtest"

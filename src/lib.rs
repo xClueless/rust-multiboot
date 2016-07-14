@@ -7,6 +7,8 @@
 
 #![no_std]
 
+#![feature(shared)]
+
 #![crate_name = "multiboot"]
 #![crate_type = "lib"]
 
@@ -16,9 +18,13 @@ extern crate std;
 #[cfg(feature = "_vesa")]
 extern crate vesa;
 
+#[cfg(feature = "_elf")]
+extern crate elfloader;
+
 use core::mem::{size_of, transmute};
 use core::str;
 use core::slice;
+use core::ptr::Shared;
 
 /// Value found in %eax after multiboot jumps to our entry point.
 pub const SIGNATURE_EAX: u32 = 0x2BADB002;
@@ -291,6 +297,7 @@ impl<'a, F: Fn(PAddr, usize) -> Option<&'a [u8]>> Multiboot<'a, F> {
             false => None,
         }
     }
+    #[cfg(feature = "_elf")]
     pub fn elf_symbols(&self) -> Option<&'a ElfSymbols> {
         match self.has_symbols() {
             true => Some(&self.header.elf_symbols),
@@ -482,4 +489,78 @@ pub struct ElfSymbols {
     size: u32,
     addr: u32,
     shndx: u32,
+}
+#[cfg(feature = "_elf")]
+impl ElfSymbols {
+    unsafe fn sections<'f>(&'f self) -> ElfSectionIter<'f> {
+        let sht = slice::from_raw_parts(self.addr as *const elfloader::elf::SectionHeader,
+                                        self.num as usize);
+        ElfSectionIter::new(sht, Shared::new(self.shndx as *mut u8))
+    }
+}
+
+#[cfg(feature = "_elf")]
+pub struct ElfSectionIter<'a> {
+    sht: &'a [elfloader::elf::SectionHeader],
+    shndx: Shared<u8>,
+    current_index: usize,
+}
+#[cfg(feature = "_elf")]
+impl<'a> ElfSectionIter<'a> {
+    pub fn new(sht: &'a [elfloader::elf::SectionHeader], shndx: Shared<u8>) -> ElfSectionIter<'a> {
+        ElfSectionIter{sht: sht, shndx: shndx, current_index: 0}
+    }
+}
+#[cfg(feature = "_elf")]
+impl<'a> Iterator for ElfSectionIter<'a> {
+    type Item = ElfSection<'a>;
+    fn next(&mut self) -> Option<ElfSection<'a>> {
+        if self.current_index >= self.sht.len() {
+            None
+        }
+        else {
+            unsafe {
+                let r = Some(
+                    ElfSection::new(&self.sht[self.current_index], self.shndx.clone())
+                        .expect("Failed to decode ELF section from multiboot information")
+                );
+                self.current_index += 1;
+                r
+            }
+        }
+    }
+}
+
+#[cfg(feature = "_elf")]
+pub struct ElfSection<'a> {
+    name: &'a str,
+    header: &'a elfloader::elf::SectionHeader,
+}
+#[cfg(feature = "_elf")]
+impl<'a> ElfSection<'a> {
+    pub unsafe fn new(header: &'a elfloader::elf::SectionHeader, shndx: Shared<u8>) -> Option<ElfSection<'a>> {
+        let name_start = shndx.offset(header.name.0 as isize);
+        for name_len in 0..200 {
+            if *name_start.offset(name_len) == 0 {
+                let name = match name_len {
+                    0 => "ERR_NO_NAME",
+                    name_len => {
+                        let name_slice = slice::from_raw_parts(name_start, name_len as usize);
+                        match str::from_utf8(name_slice) {
+                            Err(_) => "ERR_INVALID_UTF8",
+                            Ok(name) => name,
+                        }
+                    },
+                };
+                return Some(ElfSection{name: name, header: header});
+            }
+        }
+        Some(ElfSection{name: "ERR_LONG_NAME", header: header})
+    }
+    pub fn name(&self) -> &'a str {
+        self.name
+    }
+    pub fn header(&self) -> &'a elfloader::elf::SectionHeader {
+        self.header
+    }
 }
