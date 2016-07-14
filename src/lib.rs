@@ -495,20 +495,20 @@ impl ElfSymbols {
     pub unsafe fn sections<'f>(&'f self) -> ElfSectionIter<'f> {
         let sht = slice::from_raw_parts(self.addr as *const elfloader::elf::SectionHeader,
                                         self.num as usize);
-        ElfSectionIter::new(sht, Shared::new(self.shndx as *mut u8))
+        ElfSectionIter::new(sht, self.shndx as usize)
     }
 }
 
 #[cfg(feature = "_elf")]
 pub struct ElfSectionIter<'a> {
     sht: &'a [elfloader::elf::SectionHeader],
-    shndx: Shared<u8>,
+    string_header_index: usize,
     current_index: usize,
 }
 #[cfg(feature = "_elf")]
 impl<'a> ElfSectionIter<'a> {
-    pub fn new(sht: &'a [elfloader::elf::SectionHeader], shndx: Shared<u8>) -> ElfSectionIter<'a> {
-        ElfSectionIter{sht: sht, shndx: shndx, current_index: 0}
+    pub fn new(sht: &'a [elfloader::elf::SectionHeader], string_header_index: usize) -> ElfSectionIter<'a> {
+        ElfSectionIter{sht: sht, string_header_index: string_header_index, current_index: 0}
     }
 }
 #[cfg(feature = "_elf")]
@@ -521,7 +521,7 @@ impl<'a> Iterator for ElfSectionIter<'a> {
         else {
             unsafe {
                 let r = Some(
-                    ElfSection::new(&self.sht[self.current_index], self.shndx.clone())
+                    ElfSection::new(&self.sht[self.current_index], &self.sht[self.string_header_index])
                         .expect("Failed to decode ELF section from multiboot information")
                 );
                 self.current_index += 1;
@@ -539,8 +539,10 @@ pub struct ElfSection<'a> {
 }
 #[cfg(feature = "_elf")]
 impl<'a> ElfSection<'a> {
-    pub unsafe fn new(header: &'a elfloader::elf::SectionHeader, shndx: Shared<u8>) -> Option<ElfSection<'a>> {
-        let name_start = shndx.offset(header.name.0 as isize);
+    pub unsafe fn new(header: &'a elfloader::elf::SectionHeader,
+                      string_header: &'a elfloader::elf::SectionHeader) -> Option<ElfSection<'a>> {
+        assert!(string_header.shtype == elfloader::elf::SHT_STRTAB);
+        let name_start = (string_header.addr as *mut u8).offset(header.name.0 as isize);
         for name_len in 0..200 {
             if *name_start.offset(name_len) == 0 {
                 let name = match name_len {
