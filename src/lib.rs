@@ -534,7 +534,7 @@ impl<'a> Iterator for ElfSectionIter<'a> {
 #[cfg(feature = "_elf")]
 #[derive(Debug)]
 pub struct ElfSection<'a> {
-    name: &'a str,
+    name: Option<&'a str>,
     header: &'a elfloader::elf::SectionHeader,
 }
 #[cfg(feature = "_elf")]
@@ -544,21 +544,21 @@ impl<'a> ElfSection<'a> {
         for name_len in 0..200 {
             if *name_start.offset(name_len) == 0 {
                 let name = match name_len {
-                    0 => "ERR_NO_NAME",
+                    0 => None,
                     name_len => {
                         let name_slice = slice::from_raw_parts(name_start, name_len as usize);
                         match str::from_utf8(name_slice) {
-                            Err(_) => "ERR_INVALID_UTF8",
-                            Ok(name) => name,
+                            Err(_) => None,
+                            Ok(name) => Some(name),
                         }
                     },
                 };
                 return Some(ElfSection{name: name, header: header});
             }
         }
-        Some(ElfSection{name: "ERR_LONG_NAME", header: header})
+        Some(ElfSection{name: None, header: header})
     }
-    pub fn name(&self) -> &'a str {
+    pub fn name(&self) -> Option<&'a str> {
         self.name
     }
     pub fn header(&self) -> &'a elfloader::elf::SectionHeader {
