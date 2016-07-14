@@ -532,6 +532,7 @@ impl<'a> Iterator for ElfSectionIter<'a> {
 }
 
 #[cfg(feature = "_elf")]
+#[derive(Debug)]
 pub struct ElfSection<'a> {
     name: &'a str,
     header: &'a elfloader::elf::SectionHeader,
