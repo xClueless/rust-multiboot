@@ -492,7 +492,7 @@ pub struct ElfSymbols {
 }
 #[cfg(feature = "_elf")]
 impl ElfSymbols {
-    unsafe fn sections<'f>(&'f self) -> ElfSectionIter<'f> {
+    pub unsafe fn sections<'f>(&'f self) -> ElfSectionIter<'f> {
         let sht = slice::from_raw_parts(self.addr as *const elfloader::elf::SectionHeader,
                                         self.num as usize);
         ElfSectionIter::new(sht, Shared::new(self.shndx as *mut u8))
